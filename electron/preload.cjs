@@ -5,7 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   save: (json) => ipcRenderer.invoke('data:save', json),
   saveSync: (json) => ipcRenderer.sendSync('data:saveSync', json),
   applySettings: (settings) => ipcRenderer.invoke('settings:apply', settings),
-  notify: (title, body) => ipcRenderer.invoke('notify', title, body),
+  notify: (title, body, view) => ipcRenderer.invoke('notify', title, body, view),
   setStatus: (text) => ipcRenderer.invoke('tray:status', text),
   openDataFolder: () => ipcRenderer.invoke('data:openFolder'),
   dataPath: () => ipcRenderer.invoke('data:path'),

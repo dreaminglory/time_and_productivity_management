@@ -8,6 +8,7 @@ export function Settings() {
   const { data, update } = useData();
   const s = data.settings;
   const [newType, setNewType] = useState('');
+  const [newSubject, setNewSubject] = useState('');
   const [path, setPath] = useState('');
   useEffect(() => void api.dataPath().then(setPath), []);
 
@@ -17,6 +18,12 @@ export function Settings() {
     const t = newType.trim();
     if (t && !s.workoutTypes.includes(t)) update((d) => void d.settings.workoutTypes.push(t));
     setNewType('');
+  };
+
+  const addSubject = () => {
+    const t = newSubject.trim();
+    if (t && !s.studySubjects.includes(t)) update((d) => void d.settings.studySubjects.push(t));
+    setNewSubject('');
   };
 
   return (
@@ -41,6 +48,8 @@ export function Settings() {
           <NumberInput value={s.goals.prayers} onChange={(v) => setGoal('prayers', v)} />
           <label>Breathwork</label>
           <NumberInput value={s.goals.breathwork} onChange={(v) => setGoal('breathwork', v)} />
+          <label>Meditation</label>
+          <DurationInput minutes={s.goals.meditationMin} onChange={(v) => setGoal('meditationMin', v)} />
           <label>Sun exposure</label>
           <DurationInput minutes={s.goals.sunMin} onChange={(v) => setGoal('sunMin', v)} />
           <label>Workouts per week</label>
@@ -68,6 +77,28 @@ export function Settings() {
           <TimeInput value={s.weekend.wake} allowEmpty={false} onChange={(v) => update((d) => void (d.settings.weekend.wake = v!))} />
           <TimeInput value={s.weekend.bed} allowEmpty={false} onChange={(v) => update((d) => void (d.settings.weekend.bed = v!))} />
           <span />
+        </div>
+      </section>
+
+      <section className="card">
+        <header className="card-head">
+          <h3>🎓 Study subjects</h3>
+        </header>
+        <div className="chips">
+          {s.studySubjects.map((t) => (
+            <span key={t} className="chip on removable">
+              {t}
+              <button aria-label={`Remove ${t}`} onClick={() => update((d) => void (d.settings.studySubjects = d.settings.studySubjects.filter((x) => x !== t)))}>
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="row">
+          <input className="text-input grow" placeholder="New study subject…" value={newSubject} onChange={(e) => setNewSubject(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSubject()} />
+          <button className="btn" onClick={addSubject}>
+            Add
+          </button>
         </div>
       </section>
 

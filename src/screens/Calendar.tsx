@@ -14,6 +14,9 @@ export function Calendar({ cursor, setCursor, onOpen }: { cursor: string; setCur
   const [colour, setColour] = useState<Colour>('satisfaction');
   const today = logicalToday(data, new Date(now));
   const totals = totalsByDay(data, now);
+  const eventsByDay = new Map<string, string[]>();
+  for (const r of data.reminders) eventsByDay.set(r.date, [...(eventsByDay.get(r.date) ?? []), r.title]);
+  const events = (k: string) => eventsByDay.get(k) ?? [];
 
   const tint = (s: DaySummary): string | undefined => {
     if (colour === 'satisfaction' && s.satisfaction !== null) return scoreColor(s.satisfaction);
@@ -84,6 +87,11 @@ export function Calendar({ cursor, setCursor, onOpen }: { cursor: string; setCur
               >
                 <div className="cell-top">
                   <span className="cell-date">{fromKey(k).getDate()}</span>
+                  {events(k).length > 0 && (
+                    <span className="cell-event" title={events(k).join(', ')}>
+                      🔔
+                    </span>
+                  )}
                   {s.satisfaction !== null && <span className="cell-score">{s.satisfaction}</span>}
                 </div>
                 {s.hasData && <CellLines s={s} />}
@@ -110,6 +118,11 @@ export function Calendar({ cursor, setCursor, onOpen }: { cursor: string; setCur
                   <span>{weekdayName(k)}</span>
                   <strong>{fromKey(k).getDate()}</strong>
                 </div>
+                {events(k).map((t, i) => (
+                  <div key={i} className="week-event">
+                    🔔 {t}
+                  </div>
+                ))}
                 {s.satisfaction !== null && <div className="week-score">⭐ {s.satisfaction}/10</div>}
                 {(s.wake || s.bed) && (
                   <div className="week-line muted">
@@ -141,6 +154,7 @@ function CellLines({ s, full = false }: { s: DaySummary; full?: boolean }) {
   if (s.ms.study >= 60000) lines.push(['var(--c-study)', '🎓', fmtDur(s.ms.study)]);
   if (s.pages) lines.push(['var(--c-reading)', '📖', `${s.pages} p`]);
   if (s.workedOut) lines.push(['var(--c-workout)', '🏋️', full && s.workoutTypes.length ? s.workoutTypes.join(', ') : s.ms.workout >= 60000 ? fmtDur(s.ms.workout) : '✓']);
+  if (full && s.ms.meditation >= 60000) lines.push(['var(--c-med)', '🧘', `${fmtDur(s.ms.meditation)} meditation`]);
   if (full && s.ms.sun >= 60000) lines.push(['var(--c-sun)', '☀️', fmtDur(s.ms.sun)]);
   if (full && (s.prayers || s.breathwork)) lines.push(['var(--c-med)', '🧘', `${s.prayers} prayers · ${s.breathwork} breath`]);
   if (full && s.screenTimeMin !== null) lines.push(['var(--c-screen)', '📱', fmtMin(s.screenTimeMin)]);

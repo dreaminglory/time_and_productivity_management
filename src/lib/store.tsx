@@ -8,7 +8,7 @@ export interface Api {
   save(json: string): Promise<void>;
   saveSync(json: string): void;
   applySettings(s: { startWithWindows: boolean; closeToTray: boolean }): Promise<void>;
-  notify(title: string, body: string): Promise<void>;
+  notify(title: string, body: string, view?: string): Promise<void>;
   setStatus(text: string): Promise<void>;
   openDataFolder(): Promise<void>;
   dataPath(): Promise<string>;

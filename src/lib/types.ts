@@ -1,4 +1,4 @@
-export type Category = 'work' | 'study' | 'reading' | 'workout' | 'sun';
+export type Category = 'work' | 'study' | 'reading' | 'workout' | 'sun' | 'meditation';
 
 export const CATEGORIES: { id: Category; label: string; icon: string; color: string }[] = [
   { id: 'work', label: 'Work', icon: '💼', color: 'var(--c-work)' },
@@ -6,6 +6,7 @@ export const CATEGORIES: { id: Category; label: string; icon: string; color: str
   { id: 'reading', label: 'Reading', icon: '📖', color: 'var(--c-reading)' },
   { id: 'workout', label: 'Workout', icon: '🏋️', color: 'var(--c-workout)' },
   { id: 'sun', label: 'Sun', icon: '☀️', color: 'var(--c-sun)' },
+  { id: 'meditation', label: 'Meditation', icon: '🧘', color: 'var(--c-med)' },
 ];
 
 export const categoryInfo = (id: Category) => CATEGORIES.find((c) => c.id === id)!;
@@ -17,10 +18,12 @@ export interface Session {
   category: Category;
   start: string; // ISO timestamp
   end: string; // ISO timestamp
+  subject?: string; // what was studied (study sessions only)
 }
 
 export interface ActiveTimer {
   category: Category;
+  subject?: string;
   start: string;
   day: string;
 }
@@ -66,6 +69,7 @@ export interface Goals {
   prayers: number;
   breathwork: number;
   sunMin: number;
+  meditationMin: number;
   workoutPerWeek: number;
   screenMaxMin: number;
 }
@@ -80,16 +84,37 @@ export interface Settings {
   weekday: Schedule;
   weekend: Schedule;
   workoutTypes: string[];
+  studySubjects: string[];
   reminderTime: string;
   startWithWindows: boolean;
   closeToTray: boolean;
   longTimerHours: number;
 }
 
+export interface Note {
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: string;
+}
+
+/** A flagged future event. Notifications fire `leadDays` days before `date` (0 = on the day) at `time`. */
+export interface Reminder {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM, when notifications fire
+  leadDays: number[];
+  sent: number[]; // leads already notified
+  createdAt: string;
+}
+
 export interface AppData {
   version: 1;
   settings: Settings;
   books: Book[];
+  notes: Note[];
+  reminders: Reminder[];
   days: Record<string, Day>;
   sessions: Session[];
   active: ActiveTimer | null;

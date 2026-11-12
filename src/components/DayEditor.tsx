@@ -42,10 +42,14 @@ export function DayEditor({ date, isToday }: { date: string; isToday: boolean })
           <Counter label="Prayers" value={day?.prayers ?? 0} onChange={(v) => edit((dd) => void (dd.prayers = v))} />
           <Counter label="Breathwork" value={day?.breathwork ?? 0} onChange={(v) => edit((dd) => void (dd.breathwork = v))} />
           <div className="kv">
+            <span>🧘 Meditation time</span>
+            <strong>{fmtDur(summary.ms.meditation)}</strong>
+          </div>
+          <div className="kv">
             <span>☀️ Sun exposure</span>
             <strong>{fmtDur(summary.ms.sun)}</strong>
           </div>
-          <p className="hint">Sun time comes from the Sun clock.</p>
+          <p className="hint">Meditation and sun time come from their clocks.</p>
         </Card>
         <TimelineCard date={date} />
       </div>
@@ -288,7 +292,7 @@ function WorkoutCard({ date, day, workoutMs, edit }: { date: string; day: Day | 
   const { data, update } = useData();
   const [newType, setNewType] = useState('');
   const selected = day?.workoutTypes ?? [];
-  const done = selected.length > 0 || workoutMs > 0;
+  const done = selected.length > 0 || workoutMs >= 60000;
 
   const toggle = (t: string) =>
     edit((dd) => {
@@ -344,7 +348,7 @@ function TimelineCard({ date }: { date: string }) {
   const now = useNow(1000);
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState<{ cat: Category; from: string | null; to: string | null }>({ cat: 'work', from: null, to: null });
+  const [form, setForm] = useState<{ cat: Category; subject: string; from: string | null; to: string | null }>({ cat: 'work', subject: '', from: null, to: null });
 
   const sessions = data.sessions.filter((s) => s.day === date).sort((a, b) => a.start.localeCompare(b.start));
   const active = data.active?.day === date ? data.active : null;
@@ -364,7 +368,7 @@ function TimelineCard({ date }: { date: string }) {
     if (end <= start) end = new Date(Date.parse(end) + 86400000).toISOString();
     update((d) => {
       ensureDay(d, date);
-      d.sessions.push({ id: uid(), day: date, category: form.cat, start, end });
+      d.sessions.push({ id: uid(), day: date, category: form.cat, ...(form.cat === 'study' && form.subject ? { subject: form.subject } : {}), start, end });
     });
     setForm({ ...form, from: null, to: null });
     setAdding(false);
@@ -389,6 +393,16 @@ function TimelineCard({ date }: { date: string }) {
               </option>
             ))}
           </select>
+          {form.cat === 'study' && (
+            <select className="select" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}>
+              <option value="">No subject</option>
+              {data.settings.studySubjects.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          )}
           <TimeInput value={form.from} onChange={(v) => setForm((f) => ({ ...f, from: v }))} />
           <span>→</span>
           <TimeInput value={form.to} onChange={(v) => setForm((f) => ({ ...f, to: v }))} />
@@ -405,8 +419,19 @@ function TimelineCard({ date }: { date: string }) {
             <li key={s.id}>
               <span className="dot" style={{ background: c.color }} />
               <span className="sess-cat">{c.label}</span>
+              {s.subject && editing !== s.id && <span className="subject-tag">{s.subject}</span>}
               {editing === s.id ? (
                 <span className="row tight">
+                  {s.category === 'study' && (
+                    <select className="select" value={s.subject ?? ''} onChange={(e) => update((d) => void (d.sessions.find((x) => x.id === s.id)!.subject = e.target.value || undefined))}>
+                      <option value="">No subject</option>
+                      {[...data.settings.studySubjects, ...(s.subject && !data.settings.studySubjects.includes(s.subject) ? [s.subject] : [])].map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <TimeInput value={fmtTime(s.start)} allowEmpty={false} onChange={(v) => setTimes(s.id, v, null)} />
                   <span>→</span>
                   <TimeInput value={fmtTime(s.end)} allowEmpty={false} onChange={(v) => setTimes(s.id, null, v)} />
@@ -435,6 +460,7 @@ function TimelineCard({ date }: { date: string }) {
           <li className="live">
             <span className="dot pulse" style={{ background: categoryInfo(active.category).color }} />
             <span className="sess-cat">{categoryInfo(active.category).label}</span>
+            {active.subject && <span className="subject-tag">{active.subject}</span>}
             <span className="muted grow">{fmtTime(active.start)}–now</span>
             <span>{fmtClock(now - Date.parse(active.start))}</span>
           </li>

@@ -24,11 +24,28 @@ function loadData() {
     const parsed = JSON.parse(raw);
     // Keep the last good copy from each app start as a safety net against corruption.
     fs.copyFileSync(file, file + '.bak');
+    keepDailyBackup(file);
     return parsed;
   } catch {
     const bak = file + '.bak';
     if (fs.existsSync(bak)) return JSON.parse(fs.readFileSync(bak, 'utf8'));
     return null;
+  }
+}
+
+/** One dated copy per day in backups/, newest 30 kept, so a single bad start can never wipe the only backup. */
+function keepDailyBackup(file) {
+  try {
+    const dir = path.join(path.dirname(file), 'backups');
+    fs.mkdirSync(dir, { recursive: true });
+    const d = new Date();
+    const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const target = path.join(dir, `data-${stamp}.json`);
+    if (!fs.existsSync(target)) fs.copyFileSync(file, target);
+    const old = fs.readdirSync(dir).filter((n) => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(n)).sort().slice(0, -30);
+    for (const n of old) fs.unlinkSync(path.join(dir, n));
+  } catch {
+    // Backups are best-effort; never block the app from starting.
   }
 }
 
@@ -117,12 +134,12 @@ ipcMain.handle('settings:apply', (_e, settings) => {
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: !!settings.startWithWindows });
 });
 
-ipcMain.handle('notify', (_e, title, body) => {
+ipcMain.handle('notify', (_e, title, body, view) => {
   if (!Notification.isSupported()) return;
   const n = new Notification({ title, body, icon: ICON_PATH });
   n.on('click', () => {
     showWindow();
-    win?.webContents.send('navigate', 'today');
+    win?.webContents.send('navigate', view || 'today');
   });
   n.show();
 });

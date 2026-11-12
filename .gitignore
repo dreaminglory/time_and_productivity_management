@@ -20,3 +20,6 @@ Thumbs.db
 
 # Software factory job state
 /factory/jobs/
+
+# Local copies of personal data (never commit)
+recovery/

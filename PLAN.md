@@ -11,7 +11,7 @@ Personal, offline, Windows-only desktop app for tracking how each day is spent.
 | Language / theme | English UI, dark theme, week starts Monday, 24-hour time |
 | Storage | Local only, no backup service (the app keeps one previous copy `data.json.bak` as a corruption safety net) |
 | Timer model | **Chess clock** — exactly one activity runs at a time; starting another pauses the current one |
-| Timed activities | Work, Study, Reading, Workout, Sun |
+| Timed activities | Work, Study, Reading, Workout, Sun, Meditation (goal 10 min/day) |
 | Timer persistence | Timer keeps counting if the app/PC is closed; on reopen, if it ran unusually long (default 3h+), the app asks "keep it or set the real stop time?" |
 | Day boundary | A day runs from wake-up to bedtime, not midnight to midnight (going to bed at 01:30 still belongs to the previous day) |
 | Start/End of day | **Planned vs actual** — planned 06:30 wake / 22:30 bed on weekdays (weekend editable separately); "Good morning" / "Good night" buttons stamp the actual time (editable) |
@@ -19,7 +19,7 @@ Personal, offline, Windows-only desktop app for tracking how each day is spent.
 | Tasks | One-off tasks added on the day, checkbox done/not done. No timers. Routine items (reading, work, workout, …) are not tasks — they are the fixed daily categories |
 | Reading | Pages + book library (title, total pages, progress) + reading timer |
 | Workout | Duration via timer + one or more types per day. Default types: Full body, Upper body, Lower body, Arms, Legs, Chest, Back, Shoulders, Core, Cardio, Running, Stretching (custom types can be added) |
-| Meditation | Prayers count, Breathwork count (no timer), Sun exposure timer |
+| Meditation | Meditation timer (goal 10 min/day), Prayers count, Breathwork count (no timer), Sun exposure timer |
 | Screen time | Entered manually (minutes) — a daily *limit* rather than a target |
 | Goals | Daily targets with progress bars; workout goal is per week (not every day). Days that hit all goals are highlighted |
 | Stats | Weekly/monthly totals charts; calendar colouring (by satisfaction or goal completion) |
@@ -30,6 +30,7 @@ Personal, offline, Windows-only desktop app for tracking how each day is spent.
 | Goal | Default |
 |---|---|
 | Work | 6 h / day |
+| Meditation | 10 min / day |
 | Study | 1 h / day |
 | Reading | 20 pages / day |
 | Prayers | 3 / day |
@@ -50,7 +51,9 @@ Personal, offline, Windows-only desktop app for tracking how each day is spent.
 2. **Calendar**: month and week views. Each day shows compact markers. Colour days by satisfaction or goal completion. Click a day to open it.
 3. **Day detail**: the same editors as Today, for any past day, plus a list of timer sessions that can be edited or deleted, and manual session entry for forgotten timers.
 4. **Stats**: weekly and monthly totals per category.
-5. **Settings**: goals, planned wake/bed times, workout types, books, reminder time, startup/tray options.
+5. **Notes**: general to-do list not tied to any day (add, tick off, clear done).
+6. **Reminders**: flag future events (title, date, notify time) and pick when to be notified: on the day, 1/2/3 days, 1 or 2 weeks before. Each fires a Windows notification once (missed ones catch up on next launch). Upcoming events show as a banner on Today and a 🔔 on the Calendar. Edit/rename/delete any reminder; past ones can be cleared.
+7. **Settings**: goals, planned wake/bed times, workout types, books, reminder time, startup/tray options.
 
 ## Data model (JSON)
 

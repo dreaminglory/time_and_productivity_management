@@ -8,14 +8,19 @@ import { DayEditor } from './components/DayEditor';
 import { Calendar } from './screens/Calendar';
 import { Stats } from './screens/Stats';
 import { Books } from './screens/Books';
+import { Notes } from './screens/Notes';
+import { Reminders } from './screens/Reminders';
+import { activeReminders, dueNotifications, notificationText, relativeDay } from './lib/reminders';
 import { Settings } from './screens/Settings';
 
-type View = { name: 'today' } | { name: 'calendar' } | { name: 'day'; date: string } | { name: 'stats' } | { name: 'books' } | { name: 'settings' };
+type View = { name: 'today' } | { name: 'calendar' } | { name: 'day'; date: string } | { name: 'stats' } | { name: 'notes' } | { name: 'reminders' } | { name: 'books' } | { name: 'settings' };
 
 const NAV: { name: View['name']; label: string; icon: string }[] = [
   { name: 'today', label: 'Today', icon: '◉' },
   { name: 'calendar', label: 'Calendar', icon: '▦' },
   { name: 'stats', label: 'Stats', icon: '▤' },
+  { name: 'notes', label: 'Notes', icon: '✎' },
+  { name: 'reminders', label: 'Reminders', icon: '🔔' },
   { name: 'books', label: 'Books', icon: '❏' },
   { name: 'settings', label: 'Settings', icon: '⚙' },
 ];
@@ -27,9 +32,10 @@ export function App() {
   const [calCursor, setCalCursor] = useState(() => toKey(new Date()));
   const today = logicalToday(data, new Date(now));
 
-  useEffect(() => api.onNavigate(() => setView({ name: 'today' })), []);
+  useEffect(() => api.onNavigate((v) => setView(v === 'reminders' ? { name: 'reminders' } : { name: 'today' })), []);
 
   useEveningReminder();
+  useEventReminders();
   useTrayStatus();
 
   const openDay = (date: string) => setView(date === today ? { name: 'today' } : { name: 'day', date });
@@ -56,6 +62,7 @@ export function App() {
             <div className="running-name">
               {categoryInfo(active.category).icon} {categoryInfo(active.category).label}
             </div>
+            {active.subject && <div className="small muted">{active.subject}</div>}
             <div className="running-time">{fmtClock(now - Date.parse(active.start))}</div>
             <button className="btn danger small" onClick={() => update((d) => stopActive(d))}>
               ■ Stop
@@ -73,6 +80,7 @@ export function App() {
                 <h1>{fmtLong(today)}</h1>
               </div>
             </div>
+            <ReminderBanner onOpen={() => setView({ name: 'reminders' })} />
             <ChessClock day={today} />
             <DayEditor key={today} date={today} isToday />
           </div>
@@ -98,6 +106,8 @@ export function App() {
         )}
         {view.name === 'calendar' && <Calendar cursor={calCursor} setCursor={setCalCursor} onOpen={openDay} />}
         {view.name === 'stats' && <Stats />}
+        {view.name === 'notes' && <Notes />}
+        {view.name === 'reminders' && <Reminders />}
         {view.name === 'books' && <Books />}
         {view.name === 'settings' && <Settings />}
       </main>
@@ -200,4 +210,53 @@ function useTrayStatus() {
   const active = data.active;
   const text = active ? `${categoryInfo(active.category).label} running ${fmtDur(now - Date.parse(active.start))}` : '';
   useEffect(() => void api.setStatus(text), [text]);
+}
+
+/** Windows notifications for flagged events: each chosen lead (e.g. 1 day before, on the day) fires once at the reminder's time. */
+function useEventReminders() {
+  const { data, update } = useData();
+  const ref = useRef(data);
+  ref.current = data;
+
+  useEffect(() => {
+    const check = () => {
+      const now = new Date();
+      const due = dueNotifications(ref.current.reminders, now);
+      if (!due.length) return;
+      const today = toKey(now);
+      for (const { reminder } of due) {
+        const { title, body } = notificationText(reminder, today);
+        api.notify(title, body, 'reminders');
+      }
+      update((d) => {
+        for (const { reminder, due: leads } of due) {
+          const r = d.reminders.find((x) => x.id === reminder.id);
+          if (r) r.sent = [...new Set([...r.sent, ...leads])];
+        }
+      });
+    };
+    check();
+    const id = window.setInterval(check, 30000);
+    return () => window.clearInterval(id);
+  }, [update]);
+}
+
+/** Upcoming events inside their reminder window, shown on the Today screen. */
+function ReminderBanner({ onOpen }: { onOpen: () => void }) {
+  const { data } = useData();
+  const now = useNow(60000);
+  const today = logicalToday(data, new Date(now)); // match the day shown on the Today screen
+  const list = activeReminders(data.reminders, today);
+  if (!list.length) return null;
+  return (
+    <button className="reminder-banner" onClick={onOpen}>
+      {list.map((r) => (
+        <div key={r.id} className={`reminder-banner-line ${r.date === today ? 'today' : ''}`}>
+          <span>🔔</span>
+          <strong>{relativeDay(r.date, today)}</strong>
+          <span>{r.title}</span>
+        </div>
+      ))}
+    </button>
+  );
 }

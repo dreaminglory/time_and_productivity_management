@@ -27,6 +27,7 @@ const METRICS: Metric[] = [
   { id: 'pages', label: 'Pages read', color: 'var(--c-reading)', value: (s) => s.pages, agg: 'sum', format: count, goal: (g) => g.readingPages },
   { id: 'readingTime', label: 'Reading time', color: 'var(--c-reading)', value: (s) => s.ms.reading / 60000, agg: 'sum', format: mins },
   { id: 'workout', label: 'Workout time', color: 'var(--c-workout)', value: (s) => s.ms.workout / 60000, agg: 'sum', format: mins },
+  { id: 'meditation', label: 'Meditation', color: 'var(--c-med)', value: (s) => s.ms.meditation / 60000, agg: 'sum', format: mins, goal: (g) => g.meditationMin },
   { id: 'sun', label: 'Sun', color: 'var(--c-sun)', value: (s) => s.ms.sun / 60000, agg: 'sum', format: mins, goal: (g) => g.sunMin },
   { id: 'prayers', label: 'Prayers', color: 'var(--c-med)', value: (s) => s.prayers, agg: 'sum', format: count, goal: (g) => g.prayers },
   { id: 'breathwork', label: 'Breathwork', color: 'var(--c-med)', value: (s) => s.breathwork, agg: 'sum', format: count, goal: (g) => g.breathwork },
@@ -65,6 +66,9 @@ export function Stats() {
   };
   const logged = sums.filter((s) => s.hasData);
   const nLogged = Math.max(1, logged.length);
+  const pastSet = new Set(past);
+  const sumSubject = (subject: string) =>
+    data.sessions.filter((x) => x.category === 'study' && x.subject === subject && pastSet.has(x.day)).reduce((a, x) => a + Date.parse(x.end) - Date.parse(x.start), 0);
   const avgSat = avgOf(sums.map((s) => s.satisfaction));
   const avgScreen = avgOf(sums.map((s) => s.screenTimeMin));
   const avgWake = avgOf(sums.map((s) => (s.wake ? hhmmToMin(s.wake) : null)));
@@ -78,6 +82,8 @@ export function Stats() {
     ['🎓 Study', fmtDur(sum((s) => s.ms.study)), `${fmtDur(sum((s) => s.ms.study) / nLogged)} / day`],
     ['📖 Pages', String(sum((s) => s.pages)), `${fmtDur(sum((s) => s.ms.reading))} reading`],
     ['🏋️ Workouts', `${sums.filter((s) => s.workedOut).length} days`, fmtDur(sum((s) => s.ms.workout))],
+    ['🧘 Meditation', fmtDur(sum((s) => s.ms.meditation)), `${fmtDur(sum((s) => s.ms.meditation) / nLogged)} / day`],
+    ...data.settings.studySubjects.map((sub): [string, string, string?] => [`🎓 ${sub}`, fmtDur(sumSubject(sub)), undefined]),
     ['☀️ Sun', fmtDur(sum((s) => s.ms.sun)), undefined],
     ['🙏 Prayers', String(sum((s) => s.prayers)), `${sum((s) => s.breathwork)} breathwork`],
     ['⭐ Satisfaction', avgSat === null ? '—' : `${avgSat.toFixed(1)}/10`, 'average'],

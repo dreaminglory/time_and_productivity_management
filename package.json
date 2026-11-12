@@ -1,7 +1,7 @@
 {
   "name": "day-tracker",
   "productName": "Day Tracker",
-  "version": "0.1.0",
+  "version": "0.2.3",
   "description": "Personal time management and daily habit tracker",
   "author": "Dimitar Arabadzhiev",
   "private": true,

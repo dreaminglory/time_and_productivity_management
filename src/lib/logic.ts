@@ -32,11 +32,13 @@ export function stopActive(d: AppData, at = new Date()) {
   if (!d.active) return;
   const startMs = Date.parse(d.active.start);
   const endMs = Math.max(startMs, at.getTime());
-  if (endMs - startMs >= 1000) {
+  // Anything under 10 seconds is an accidental click, not a real session.
+  if (endMs - startMs >= 10000) {
     d.sessions.push({
       id: uid(),
       day: d.active.day,
       category: d.active.category,
+      ...(d.active.subject ? { subject: d.active.subject } : {}),
       start: d.active.start,
       end: new Date(endMs).toISOString(),
     });
@@ -44,13 +46,18 @@ export function stopActive(d: AppData, at = new Date()) {
   d.active = null;
 }
 
+/** Throw the running timer away without recording anything (for a click by mistake). */
+export function discardActive(d: AppData) {
+  d.active = null;
+}
+
 /** Chess-clock press: stops whatever runs; starts `cat` unless it was the one running. */
-export function toggleTimer(d: AppData, cat: Category, day: string) {
+export function toggleTimer(d: AppData, cat: Category, day: string, subject?: string) {
   const running = d.active?.category;
   stopActive(d);
   if (running !== cat) {
     ensureDay(d, day);
-    d.active = { category: cat, start: new Date().toISOString(), day };
+    d.active = { category: cat, start: new Date().toISOString(), day, ...(subject ? { subject } : {}) };
   }
 }
 
@@ -58,7 +65,7 @@ export function toggleTimer(d: AppData, cat: Category, day: string) {
 
 export type CatTotals = Record<Category, number>;
 
-const zeroTotals = (): CatTotals => ({ work: 0, study: 0, reading: 0, workout: 0, sun: 0 });
+const zeroTotals = (): CatTotals => ({ work: 0, study: 0, reading: 0, workout: 0, sun: 0, meditation: 0 });
 
 /** Milliseconds per category per day, including the running timer. */
 export function totalsByDay(data: AppData, nowMs: number): Map<string, CatTotals> {
@@ -102,7 +109,7 @@ export function summarize(data: AppData, date: string, totals: Map<string, CatTo
     pages,
     prayers: day?.prayers ?? 0,
     breathwork: day?.breathwork ?? 0,
-    workedOut: workoutTypes.length > 0 || ms.workout > 0,
+    workedOut: workoutTypes.length > 0 || ms.workout >= 60000,
     workoutTypes,
     satisfaction: day?.satisfaction ?? null,
     screenTimeMin: day?.screenTimeMin ?? null,
@@ -156,6 +163,7 @@ export function dailyGoals(data: AppData, s: DaySummary): GoalProgress[] {
     { key: 'pages', label: 'Pages', value: s.pages, target: g.readingPages, kind: 'min', format: fmtCount, color: 'var(--c-reading)' },
     { key: 'prayers', label: 'Prayers', value: s.prayers, target: g.prayers, kind: 'min', format: fmtCount, color: 'var(--c-med)' },
     { key: 'breathwork', label: 'Breathwork', value: s.breathwork, target: g.breathwork, kind: 'min', format: fmtCount, color: 'var(--c-med)' },
+    { key: 'meditation', label: 'Meditation', value: s.ms.meditation / 60000, target: g.meditationMin, kind: 'min', format: fmtMinutes, color: 'var(--c-med)' },
     { key: 'sun', label: 'Sun', value: s.ms.sun / 60000, target: g.sunMin, kind: 'min', format: fmtMinutes, color: 'var(--c-sun)' },
   ];
   if (s.screenTimeMin !== null) {
